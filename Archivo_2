@@ -1,0 +1,25 @@
+using System;
+
+class Programa
+{
+    static void Main()
+    {
+        // Declaración e inicialización de variables
+        int edad = 25;
+        string nombre = "José";
+        bool esEstudiante = true;
+        double altura = 1.75;
+        char inicial = 'J';
+
+        // Uso de las variables: imprimir en pantalla
+        Console.WriteLine("Nombre: " + nombre);
+        Console.WriteLine("Edad: " + edad);
+        Console.WriteLine("¿Es estudiante?: " + esEstudiante);
+        Console.WriteLine("Altura: " + altura + " metros");
+        Console.WriteLine("Inicial: " + inicial);
+
+        // Puedes hacer operaciones con las variables
+        int edadEn5Anios = edad + 5;
+        Console.WriteLine("Edad en 5 años: " + edadEn5Anios);
+    }
+}
