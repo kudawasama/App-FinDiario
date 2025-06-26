@@ -1,2 +1,6 @@
 
-
+int numero = 5;              // variable tipo entero
+string nombre = "José";      // variable tipo string
+bool activo = true;          // variable tipo booleano
+double altura = 1.75;        // variable tipo decimal
+char letra = 'A';            // variable tipo carácter
