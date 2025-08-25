@@ -4,11 +4,14 @@ import os
 from datetime import datetime
 from streamlit_oauth import OAuth2Component
 import jwt
+from dotenv import load_dotenv
 
-# Configura tus credenciales de Google OAuth2
-CLIENT_ID = "REMOVED"
-CLIENT_SECRET = "REMOVED"
-REDIRECT_URI = "http://localhost:8501"
+load_dotenv()
+
+# Configura tus credenciales de Google OAuth2 desde variables de entorno
+CLIENT_ID = os.getenv("CLIENT_ID")
+CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+REDIRECT_URI = os.getenv("REDIRECT_URI")
 
 st.title("Iniciar sesión con Google")
 oauth2 = OAuth2Component(
