@@ -1,0 +1,8 @@
+.env
+*.env
+# Otros archivos sensibles
+*.key
+*.pem
+*.p12
+*.crt
+*.secret
