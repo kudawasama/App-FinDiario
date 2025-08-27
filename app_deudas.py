@@ -137,9 +137,20 @@ if st.session_state['authenticated']:
             df_vacio.to_csv(ARCHIVO_CSV, index=False)
             return df_vacio
 
+
     def guardar_datos(df):
         """Guarda los datos del DataFrame en el archivo CSV."""
         df.to_csv(ARCHIVO_CSV, index=False)
+
+    def eliminar_deuda(indice):
+        """Elimina una deuda por índice y guarda el DataFrame actualizado."""
+        df = cargar_datos()
+        if 0 <= indice < len(df):
+            df = df.drop(indice).reset_index(drop=True)
+            guardar_datos(df)
+            return True, "Deuda eliminada exitosamente."
+        else:
+            return False, "Índice de deuda inválido."
 
     def anadir_deuda(acreedor, monto_total, fecha_vencimiento):
         """Añade una nueva deuda al DataFrame."""
@@ -212,6 +223,7 @@ if st.session_state['authenticated']:
                 else:
                     st.error("Por favor, llena todos los campos.")
 
+
     # Sección 2: Listar y Pagar
     elif opcion == "Listar y Pagar":
         st.header("Listado de Deudas y Pagos")
@@ -240,6 +252,22 @@ if st.session_state['authenticated']:
                             st.error(mensaje)
                     else:
                         st.error("El monto del pago debe ser un número positivo.")
+
+            st.subheader("Eliminar una Deuda")
+            with st.form("form_eliminar_deuda"):
+                deuda_a_eliminar = st.selectbox(
+                    "Selecciona la deuda a eliminar:",
+                    options=df.index,
+                    format_func=lambda x: f"{df.loc[x, 'Acreedor']} - ${safe_int(df.loc[x, 'Monto Restante']):,} restantes (vence {df.loc[x, 'Fecha Vencimiento']})"
+                )
+                eliminar_enviado = st.form_submit_button("Eliminar Deuda")
+                if eliminar_enviado:
+                    exito, mensaje = eliminar_deuda(deuda_a_eliminar)
+                    if exito:
+                        st.success(mensaje)
+                        st.rerun()
+                    else:
+                        st.error(mensaje)
         else:
             st.info("Aún no tienes deudas registradas.")
 
