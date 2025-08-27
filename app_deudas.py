@@ -2,16 +2,28 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime
-from streamlit_oauth import OAuth2Component
+try:
+    from streamlit_oauth import OAuth2Component
+except ModuleNotFoundError:
+    OAuth2Component = None
 import jwt
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Configura tus credenciales de Google OAuth2 desde variables de entorno
-CLIENT_ID = os.getenv("CLIENT_ID")
-CLIENT_SECRET = os.getenv("CLIENT_SECRET")
-REDIRECT_URI = os.getenv("REDIRECT_URI")
+def _get_cred(name: str):
+    """Obtiene credencial desde st.secrets si existe; si no, de variables de entorno."""
+    try:
+        if name in st.secrets:
+            return st.secrets[name]
+    except Exception:
+        pass
+    return os.getenv(name)
+
+# Configura tus credenciales de Google OAuth2 desde secrets/.env
+CLIENT_ID = _get_cred("CLIENT_ID")
+CLIENT_SECRET = _get_cred("CLIENT_SECRET")
+REDIRECT_URI = _get_cred("REDIRECT_URI")
 
 missing_vars = [
     name for name, val in (
@@ -20,6 +32,11 @@ missing_vars = [
         ("REDIRECT_URI", REDIRECT_URI),
     ) if not val
 ]
+
+if OAuth2Component is None:
+    st.title("Iniciar sesión con Google")
+    st.error("No se encontró la librería 'streamlit-oauth'. Añádela a requirements.txt e instálala (pip install streamlit-oauth). En Streamlit Cloud, asegúrate de que el deploy use ese requirements.txt.")
+    st.stop()
 
 if missing_vars:
     st.title("Iniciar sesión con Google")
