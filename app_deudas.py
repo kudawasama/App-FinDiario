@@ -50,7 +50,7 @@ with st.sidebar:
         if st.button("Cerrar sesión"):
             st.session_state['authenticated'] = False
             st.session_state['user_info'] = None
-            st.experimental_rerun()
+            st.rerun()
 
 # --- APP PRINCIPAL SOLO SI AUTENTICADO ---
 if st.session_state['authenticated']:
