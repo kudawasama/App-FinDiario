@@ -10,7 +10,8 @@ import jwt
 from dotenv import load_dotenv, find_dotenv
 
 # Cargar .env de forma robusta (busca en el cwd y padres)
-load_dotenv(find_dotenv(usecwd=True))
+_ENV_PATH = find_dotenv(usecwd=True)
+load_dotenv(_ENV_PATH)
 
 def _get_cred(name: str):
     """Obtiene credencial desde st.secrets si existe; si no, de variables de entorno."""
@@ -24,7 +25,7 @@ def _get_cred(name: str):
 # Configura tus credenciales de Google OAuth2 desde secrets/.env
 CLIENT_ID = _get_cred("CLIENT_ID")
 CLIENT_SECRET = _get_cred("CLIENT_SECRET")
-REDIRECT_URI = _get_cred("REDIRECT_URI")
+REDIRECT_URI = _get_cred("REDIRECT_URI") or "http://localhost:8501"
 
 missing_vars = [
     name for name, val in (
@@ -46,6 +47,9 @@ if missing_vars:
         ". Crea un archivo .env (a partir de .env.example) con tus credenciales de Google OAuth2."
     )
     st.info("Revisa el README para los pasos de configuración de Google OAuth2.")
+    # Info de diagnóstico (no muestra secretos)
+    st.caption(f"CWD: {os.getcwd()}")
+    st.caption(f".env: {'encontrado' if _ENV_PATH else 'no encontrado'} {('→ ' + _ENV_PATH) if _ENV_PATH else ''}")
     st.stop()
 
 st.title("Iniciar sesión con Google")
