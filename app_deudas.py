@@ -1,3 +1,7 @@
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
+import io
 import streamlit as st
 import pandas as pd
 import os
@@ -88,40 +92,120 @@ with st.sidebar:
             st.success(f"¡Bienvenido, {user_info.get('name', 'Usuario')}!")
             st.rerun()
     else:
-            if st.button("Cerrar sesión"):
-                st.session_state['authenticated'] = False
-                st.session_state['user_info'] = None
-                st.rerun()
-            # Usuario y correo al fondo de la barra lateral, pequeño
-            user_info = st.session_state['user_info']
-            st.markdown("""
-            <style>
-            .sidebar-user-footer {
-                position: fixed;
-                left: 0;
-                bottom: 0;
-                width: 17rem;
-                padding: 10px 10px 10px 20px;
-                font-size: 12px;
-                color: #aaa;
-                background: #222;
-                z-index: 9999;
-            }
-            </style>
-            <div class='sidebar-user-footer'>
-                Usuario: %s<br>Correo: %s
-            </div>
-            """ % (user_info.get('name',''), user_info.get('email','')), unsafe_allow_html=True)
+        if st.button("Cerrar sesión"):
+            st.session_state['authenticated'] = False
+            st.session_state['user_info'] = None
+            st.rerun()
+
+# --- Bloque discreto inferior para usuario y reglamento ---
+if st.session_state.get('authenticated', False):
+    user_info = st.session_state['user_info']
+    nombre = user_info.get('name', '')
+    correo = user_info.get('email', '')
+    st.markdown(f"""
+    <style>
+    .user-reglamento-footer {{
+        position: fixed;
+        left: 18px;
+        bottom: 18px;
+        width: 340px;
+        background: rgba(30,30,30,0.92);
+        border-radius: 10px;
+        box-shadow: 0 2px 12px #0005;
+        padding: 12px 18px 10px 18px;
+        font-size: 13px;
+        color: #e0e0e0;
+        z-index: 99999;
+        opacity: 0.97;
+        transition: opacity 0.2s;
+    }}
+    .user-reglamento-footer:hover {{
+        opacity: 1;
+    }}
+    .user-reglamento-footer .user-info {{
+        font-weight: 500;
+        font-size: 14px;
+        margin-bottom: 2px;
+        color: #fff;
+    }}
+    .user-reglamento-footer .user-email {{
+        font-size: 12px;
+        color: #b0b0b0;
+        margin-bottom: 6px;
+    }}
+    .user-reglamento-footer .reglamento {{
+        font-size: 12px;
+        color: #aaa;
+        margin-top: 4px;
+    }}
+    </style>
+    <div class="user-reglamento-footer">
+        <div class="user-info">👤 {nombre}</div>
+        <div class="user-email">{correo}</div>
+        <div class="reglamento">
+            <b>Política de privacidad:</b> Tus datos se almacenan únicamente en tu cuenta y no se comparten ni suben a la nube. Puedes descargar o eliminar tus datos en cualquier momento.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 # --- APP PRINCIPAL SOLO SI AUTENTICADO ---
 if st.session_state['authenticated']:
 
-    user_info = st.session_state['user_info']
+    # --- Google Drive: Autenticación y funciones ---
+    SCOPES = ['https://www.googleapis.com/auth/drive.file']
+    creds = None
+    if os.path.exists('credentials.json'):
+        creds = service_account.Credentials.from_service_account_file('credentials.json', scopes=SCOPES)
+        drive_service = build('drive', 'v3', credentials=creds)
+    else:
+        st.warning('No se encontró credentials.json para Google Drive.')
+
+    def subir_a_drive(local_path, nombre_drive):
+        if not creds:
+            st.error('No autenticado con Google Drive.')
+            return
+        # Buscar si ya existe el archivo
+        results = drive_service.files().list(q=f"name='{nombre_drive}' and trashed=false", fields="files(id, name)").execute()
+        files = results.get('files', [])
+        media = MediaFileUpload(local_path, mimetype='text/csv')
+        if files:
+            # Actualizar archivo existente
+            file_id = files[0]['id']
+            drive_service.files().update(fileId=file_id, media_body=media).execute()
+            st.success('Archivo actualizado en Google Drive.')
+        else:
+            # Subir nuevo archivo
+            file_metadata = {'name': nombre_drive}
+            drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+            st.success('Archivo subido a Google Drive.')
+
+    def descargar_de_drive(nombre_drive, local_path):
+        if not creds:
+            st.error('No autenticado con Google Drive.')
+            return
+        results = drive_service.files().list(q=f"name='{nombre_drive}' and trashed=false", fields="files(id, name)").execute()
+        files = results.get('files', [])
+        if files:
+            file_id = files[0]['id']
+            request = drive_service.files().get_media(fileId=file_id)
+            fh = io.FileIO(local_path, 'wb')
+            downloader = MediaIoBaseDownload(fh, request)
+            done = False
+            while not done:
+                status, done = downloader.next_chunk()
+            st.success('Archivo descargado de Google Drive.')
+        else:
+            st.warning('No se encontró el archivo en Google Drive.')
+
+
+    # Definir funciones y variables de usuario solo una vez
     import re
     def email_to_filename(email):
         return re.sub(r'[^a-zA-Z0-9]', '_', email)
+    user_info = st.session_state['user_info']
     user_email = user_info.get('email', 'default')
     ARCHIVO_CSV = os.path.join("datos_usuarios", f"deudas_{email_to_filename(user_email)}.csv")
+    nombre_drive = f"deudas_{email_to_filename(user_email)}.csv"
 
     # Opción de respaldo manual (descargar CSV)
     if os.path.exists(ARCHIVO_CSV):
@@ -165,7 +249,7 @@ if st.session_state['authenticated']:
 
     # Manejo del borrado real en backend
     import streamlit as st
-    if st.experimental_get_query_params().get('eliminar_datos') or st.session_state.get('eliminar_datos', False):
+    if st.query_params().get('eliminar_datos') or st.session_state.get('eliminar_datos', False):
         import re
         def email_to_filename(email):
             return re.sub(r'[^a-zA-Z0-9]', '_', email)
@@ -204,9 +288,13 @@ if st.session_state['authenticated']:
             os.makedirs(os.path.dirname(ARCHIVO_CSV), exist_ok=True)
             df_vacio = pd.DataFrame(columns=['Acreedor', 'Monto Total', 'Monto Restante', 'Ultimo Pago', 'Fecha Vencimiento'])
             df_vacio.to_csv(ARCHIVO_CSV, index=False)
+            # Sincronizar con Drive al crear archivo vacío
+            subir_a_drive(ARCHIVO_CSV, nombre_drive)
 
     def cargar_datos():
         """Carga los datos del archivo CSV en un DataFrame de pandas."""
+        # Descargar siempre la última versión de Drive antes de leer
+        descargar_de_drive(nombre_drive, ARCHIVO_CSV)
         crear_archivo_csv()
         try:
             df = pd.read_csv(ARCHIVO_CSV)
@@ -219,12 +307,14 @@ if st.session_state['authenticated']:
             # Si el archivo está vacío, crea encabezados y retorna un DataFrame vacío
             df_vacio = pd.DataFrame(columns=['Acreedor', 'Monto Total', 'Monto Restante', 'Ultimo Pago', 'Fecha Vencimiento'])
             df_vacio.to_csv(ARCHIVO_CSV, index=False)
+            subir_a_drive(ARCHIVO_CSV, nombre_drive)
             return df_vacio
 
 
     def guardar_datos(df):
-        """Guarda los datos del DataFrame en el archivo CSV."""
+        """Guarda los datos del DataFrame en el archivo CSV y lo sube a Google Drive."""
         df.to_csv(ARCHIVO_CSV, index=False)
+        subir_a_drive(ARCHIVO_CSV, nombre_drive)
 
     def eliminar_deuda(indice):
         """Elimina una deuda por índice y guarda el DataFrame actualizado."""
@@ -283,12 +373,6 @@ if st.session_state['authenticated']:
     # Título y subtítulo
     st.title("💸 Gestor de Deudas Personales")
     st.markdown("Usa esta aplicación para controlar tus deudas y registrar tus pagos.")
-    # Pie de página con política de privacidad (lado izquierdo)
-    st.markdown("""
-    <div style='position:fixed;bottom:0;left:0;width:350px;background:#222;padding:10px 0 10px 20px;font-size:13px;color:#aaa;text-align:left;'>
-    Política de privacidad: Los datos se almacenan únicamente en tu cuenta y no se comparten ni suben a la nube. Puedes descargar o eliminar tus datos en cualquier momento.
-    </div>
-    """, unsafe_allow_html=True)
 
     # Menú lateral para la navegación
     st.sidebar.header("Menú de opciones")
