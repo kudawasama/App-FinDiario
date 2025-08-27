@@ -46,6 +46,25 @@ Nota: `.env` ya está ignorado en `.gitignore` para evitar subir credenciales.
 streamlit run app_deudas.py
 ```
 
+## Despliegue en Streamlit Cloud
+
+1. Conecta este repo en Streamlit Cloud.
+2. En "App secrets" agrega:
+
+	```toml
+	CLIENT_ID = "tu-client-id.apps.googleusercontent.com"
+	CLIENT_SECRET = "tu-client-secret"
+	REDIRECT_URI = "https://<tu-app>.streamlit.app"
+	```
+
+3. En Google Cloud Console, añade el mismo REDIRECT_URI exacto en "Authorized redirect URIs".
+4. Asegúrate de tener `streamlit-oauth`, `python-dotenv`, `pyjwt` en `requirements.txt` (ya incluidos).
+5. Despliega y prueba el login.
+
+Notas:
+- Local usa `.env`; en Cloud se usan `st.secrets` automáticamente.
+- Si ves el mensaje "Faltan variables de entorno", revisa que las claves existan y que el `REDIRECT_URI` coincida exactamente.
+
 ## Archivos
 
 - `app_deudas.py`: app principal con login y gestión de deudas.

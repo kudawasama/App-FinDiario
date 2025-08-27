@@ -7,9 +7,10 @@ try:
 except ModuleNotFoundError:
     OAuth2Component = None
 import jwt
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 
-load_dotenv()
+# Cargar .env de forma robusta (busca en el cwd y padres)
+load_dotenv(find_dotenv(usecwd=True))
 
 def _get_cred(name: str):
     """Obtiene credencial desde st.secrets si existe; si no, de variables de entorno."""
