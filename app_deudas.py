@@ -2,16 +2,50 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime
-from streamlit_oauth import OAuth2Component
+try:
+    from streamlit_oauth import OAuth2Component
+except ModuleNotFoundError:
+    OAuth2Component = None
 import jwt
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Configura tus credenciales de Google OAuth2 desde variables de entorno
-CLIENT_ID = os.getenv("CLIENT_ID")
-CLIENT_SECRET = os.getenv("CLIENT_SECRET")
-REDIRECT_URI = os.getenv("REDIRECT_URI")
+def _get_cred(name: str):
+    """Obtiene credencial desde st.secrets si existe; si no, de variables de entorno."""
+    try:
+        if name in st.secrets:
+            return st.secrets[name]
+    except Exception:
+        pass
+    return os.getenv(name)
+
+# Configura tus credenciales de Google OAuth2 desde secrets/.env
+CLIENT_ID = _get_cred("CLIENT_ID")
+CLIENT_SECRET = _get_cred("CLIENT_SECRET")
+REDIRECT_URI = _get_cred("REDIRECT_URI")
+
+missing_vars = [
+    name for name, val in (
+        ("CLIENT_ID", CLIENT_ID),
+        ("CLIENT_SECRET", CLIENT_SECRET),
+        ("REDIRECT_URI", REDIRECT_URI),
+    ) if not val
+]
+
+if OAuth2Component is None:
+    st.title("Iniciar sesión con Google")
+    st.error("No se encontró la librería 'streamlit-oauth'. Añádela a requirements.txt e instálala (pip install streamlit-oauth). En Streamlit Cloud, asegúrate de que el deploy use ese requirements.txt.")
+    st.stop()
+
+if missing_vars:
+    st.title("Iniciar sesión con Google")
+    st.error(
+        "Faltan variables de entorno: " + ", ".join(missing_vars) +
+        ". Crea un archivo .env (a partir de .env.example) con tus credenciales de Google OAuth2."
+    )
+    st.info("Revisa el README para los pasos de configuración de Google OAuth2.")
+    st.stop()
 
 st.title("Iniciar sesión con Google")
 oauth2 = OAuth2Component(
@@ -31,10 +65,12 @@ with st.sidebar:
     st.header("Autenticación")
     if not st.session_state['authenticated']:
         result = oauth2.authorize_button(
-            name="Iniciar sesión con Google",
+            name="Google",
             redirect_uri=REDIRECT_URI,
             scope="openid email profile",
-            key="google_login"
+            key="google_login",
+            icon="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' viewBox='0 0 48 48'%3E%3Cdefs%3E%3Cpath id='a' d='M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z'/%3E%3C/defs%3E%3CclipPath id='b'%3E%3Cuse xlink:href='%23a' overflow='visible'/%3E%3C/clipPath%3E%3Cpath clip-path='url(%23b)' fill='%23FBBC05' d='M0 37V11l17 13z'/%3E%3Cpath clip-path='url(%23b)' fill='%23EA4335' d='M0 11l17 13 7-6.1L48 14V0H0z'/%3E%3Cpath clip-path='url(%23b)' fill='%2334A853' d='M0 37l30-23 7.9 1L48 0v48H0z'/%3E%3Cpath clip-path='url(%23b)' fill='%234285F4' d='M48 48L17 24l-4-3 35-10z'/%3E%3C/svg%3E",
+            use_container_width=False
         )
         if result and "token" in result:
             id_token = result["token"]["id_token"]
@@ -62,6 +98,16 @@ if st.session_state['authenticated']:
     # Funciones de manejo de datos
     # =========================
 
+    def safe_int(val):
+        """Convierte a entero de forma segura (NaN/valores inválidos -> 0)."""
+        try:
+            num = pd.to_numeric(val, errors='coerce')
+            if pd.isna(num):
+                return 0
+            return int(num)
+        except Exception:
+            return 0
+
     def crear_archivo_csv():
         """Crea el archivo CSV si no existe y escribe los encabezados."""
         if not os.path.exists(ARCHIVO_CSV):
@@ -72,7 +118,12 @@ if st.session_state['authenticated']:
         """Carga los datos del archivo CSV en un DataFrame de pandas."""
         crear_archivo_csv()
         try:
-            return pd.read_csv(ARCHIVO_CSV)
+            df = pd.read_csv(ARCHIVO_CSV)
+            # Asegurar tipos enteros para montos si es posible
+            for col in ['Monto Total', 'Monto Restante', 'Ultimo Pago']:
+                if col in df.columns:
+                    df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
+            return df
         except pd.errors.EmptyDataError:
             # Si el archivo está vacío, crea encabezados y retorna un DataFrame vacío
             df_vacio = pd.DataFrame(columns=['Acreedor', 'Monto Total', 'Monto Restante', 'Ultimo Pago', 'Fecha Vencimiento'])
@@ -86,6 +137,10 @@ if st.session_state['authenticated']:
     def anadir_deuda(acreedor, monto_total, fecha_vencimiento):
         """Añade una nueva deuda al DataFrame."""
         df = cargar_datos()
+        try:
+            monto_total = int(monto_total)
+        except Exception:
+            monto_total = 0
         nueva_fila = {
             'Acreedor': acreedor,
             'Monto Total': monto_total,
@@ -99,7 +154,11 @@ if st.session_state['authenticated']:
     def registrar_pago(indice, monto_pago):
         """Registra un pago para una deuda existente."""
         df = cargar_datos()
-        monto_restante_actual = df.loc[indice, 'Monto Restante']
+        monto_restante_actual = safe_int(df.loc[indice, 'Monto Restante'])
+        try:
+            monto_pago = safe_int(monto_pago)
+        except Exception:
+            return False, "El monto del pago debe ser un número entero válido."
 
         if monto_pago > monto_restante_actual:
             return False, "El pago no puede ser mayor que el monto restante."
@@ -134,7 +193,7 @@ if st.session_state['authenticated']:
         st.header("Añadir Nueva Deuda")
         with st.form("form_anadir_deuda"):
             acreedor = st.text_input("Nombre del acreedor")
-            monto_total = st.number_input("Monto total de la deuda", min_value=0.0, format="%.2f")
+            monto_total = st.number_input("Monto total de la deuda", min_value=0, step=1)
             fecha_vencimiento = st.date_input("Fecha de vencimiento")
 
             enviado = st.form_submit_button("Añadir Deuda")
@@ -159,9 +218,9 @@ if st.session_state['authenticated']:
                 deuda_a_pagar = st.selectbox(
                     "Selecciona la deuda a pagar:",
                     options=df.index,
-                    format_func=lambda x: f"{df.loc[x, 'Acreedor']} - ${df.loc[x, 'Monto Restante']:.2f} restantes"
+                    format_func=lambda x: f"{df.loc[x, 'Acreedor']} - ${safe_int(df.loc[x, 'Monto Restante']):,} restantes"
                 )
-                monto_pago = st.number_input("Monto del pago", min_value=0.0, format="%.2f")
+                monto_pago = st.number_input("Monto del pago", min_value=0, step=1)
 
                 pago_enviado = st.form_submit_button("Registrar Pago")
                 if pago_enviado:
@@ -182,14 +241,14 @@ if st.session_state['authenticated']:
         st.header("Resumen General")
         df = cargar_datos()
         if not df.empty:
-            monto_total_deudas = df['Monto Total'].sum()
-            monto_pagado = df['Ultimo Pago'].sum()  # El último pago registrado
+            monto_total_deudas = int(df['Monto Total'].sum())
+            monto_pagado = int(df['Ultimo Pago'].sum())  # El último pago registrado
 
             col1, col2 = st.columns(2)
             with col1:
-                st.metric(label="Monto Total de Deudas", value=f"${monto_total_deudas:,.2f}")
+                st.metric(label="Monto Total de Deudas", value=f"${monto_total_deudas:,}")
             with col2:
-                st.metric(label="Monto Total Pagado", value=f"${monto_pagado:,.2f}")
+                st.metric(label="Monto Total Pagado", value=f"${monto_pagado:,}")
         else:
             st.info("Aún no tienes deudas registradas para mostrar un resumen.")
 else:
