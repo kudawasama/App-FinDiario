@@ -52,7 +52,8 @@ if missing_vars:
     st.caption(f".env: {'encontrado' if _ENV_PATH else 'no encontrado'} {('→ ' + _ENV_PATH) if _ENV_PATH else ''}")
     st.stop()
 
-st.title("Iniciar sesión con Google")
+if not st.session_state.get('authenticated', False):
+    st.title("Iniciar sesión con Google")
 oauth2 = OAuth2Component(
     client_id=CLIENT_ID,
     client_secret=CLIENT_SECRET,
@@ -90,7 +91,18 @@ with st.sidebar:
         user_info = st.session_state['user_info']
         st.write(f"Usuario: {user_info.get('name', '')}")
         st.write(f"Correo: {user_info.get('email', '')}")
+        borrar = st.checkbox("Eliminar mis datos al cerrar sesión")
         if st.button("Cerrar sesión"):
+            if borrar:
+                # Eliminar archivo de usuario si existe
+                user_info = st.session_state['user_info']
+                import re
+                def email_to_filename(email):
+                    return re.sub(r'[^a-zA-Z0-9]', '_', email)
+                user_email = user_info.get('email', 'default')
+                archivo = os.path.join("datos_usuarios", f"deudas_{email_to_filename(user_email)}.csv")
+                if os.path.exists(archivo):
+                    os.remove(archivo)
             st.session_state['authenticated'] = False
             st.session_state['user_info'] = None
             st.rerun()
@@ -103,7 +115,24 @@ if st.session_state['authenticated']:
     def email_to_filename(email):
         return re.sub(r'[^a-zA-Z0-9]', '_', email)
     user_email = user_info.get('email', 'default')
-    ARCHIVO_CSV = f"deudas_{email_to_filename(user_email)}.csv"
+    ARCHIVO_CSV = os.path.join("datos_usuarios", f"deudas_{email_to_filename(user_email)}.csv")
+
+    # Opción de respaldo manual (descargar CSV)
+    if os.path.exists(ARCHIVO_CSV):
+        with open(ARCHIVO_CSV, "rb") as f:
+            st.download_button(
+                label="Descargar mis deudas (CSV)",
+                data=f,
+                file_name=os.path.basename(ARCHIVO_CSV),
+                mime="text/csv"
+            )
+
+    user_info = st.session_state['user_info']
+    import re
+    def email_to_filename(email):
+        return re.sub(r'[^a-zA-Z0-9]', '_', email)
+    user_email = user_info.get('email', 'default')
+    ARCHIVO_CSV = os.path.join("datos_usuarios", f"deudas_{email_to_filename(user_email)}.csv")
 
     # =========================
     # Funciones de manejo de datos
@@ -203,7 +232,7 @@ if st.session_state['authenticated']:
     # Título y subtítulo
     st.title("💸 Gestor de Deudas Personales")
     st.markdown("Usa esta aplicación para controlar tus deudas y registrar tus pagos.")
-    st.info("Tus datos están vinculados a tu cuenta de Google y son privados. Solo tú puedes ver y modificar tu información de deudas.")
+    st.info("Tus datos están vinculados a tu cuenta de Google y son privados. Solo tú puedes ver y modificar tu información de deudas.\n\nPolítica de privacidad: Los datos se almacenan únicamente en tu cuenta y no se comparten ni suben a la nube. Puedes descargar o eliminar tus datos en cualquier momento.")
 
     # Menú lateral para la navegación
     st.sidebar.header("Menú de opciones")
