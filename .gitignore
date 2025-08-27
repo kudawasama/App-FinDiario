@@ -1,3 +1,5 @@
+# Proteger datos de usuario
+deudas.csv
 .env
 *.env
 # Otros archivos sensibles

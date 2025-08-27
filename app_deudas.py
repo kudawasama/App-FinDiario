@@ -97,9 +97,13 @@ with st.sidebar:
 
 # --- APP PRINCIPAL SOLO SI AUTENTICADO ---
 if st.session_state['authenticated']:
+
     user_info = st.session_state['user_info']
-    # Nombre del archivo donde se guardarán los datos
-    ARCHIVO_CSV = 'deudas.csv'
+    import re
+    def email_to_filename(email):
+        return re.sub(r'[^a-zA-Z0-9]', '_', email)
+    user_email = user_info.get('email', 'default')
+    ARCHIVO_CSV = f"deudas_{email_to_filename(user_email)}.csv"
 
     # =========================
     # Funciones de manejo de datos
@@ -195,9 +199,11 @@ if st.session_state['authenticated']:
 
     st.set_page_config(page_title="Gestor de Deudas Personales", page_icon="💸")
 
+
     # Título y subtítulo
     st.title("💸 Gestor de Deudas Personales")
     st.markdown("Usa esta aplicación para controlar tus deudas y registrar tus pagos.")
+    st.info("Tus datos están vinculados a tu cuenta de Google y son privados. Solo tú puedes ver y modificar tu información de deudas.")
 
     # Menú lateral para la navegación
     st.sidebar.header("Menú de opciones")
