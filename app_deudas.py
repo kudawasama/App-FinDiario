@@ -68,6 +68,8 @@ if 'user_info' not in st.session_state:
 
 with st.sidebar:
     st.header("Autenticación")
+    # Diagnóstico: muestra el REDIRECT_URI efectivo (no es secreto)
+    st.caption(f"REDIRECT_URI configurado: {REDIRECT_URI}")
     if not st.session_state['authenticated']:
         result = oauth2.authorize_button(
             name="Google",
