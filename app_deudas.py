@@ -151,6 +151,8 @@ if st.session_state['authenticated']:
     def crear_archivo_csv():
         """Crea el archivo CSV si no existe y escribe los encabezados."""
         if not os.path.exists(ARCHIVO_CSV):
+            # Crear la carpeta si no existe
+            os.makedirs(os.path.dirname(ARCHIVO_CSV), exist_ok=True)
             df_vacio = pd.DataFrame(columns=['Acreedor', 'Monto Total', 'Monto Restante', 'Ultimo Pago', 'Fecha Vencimiento'])
             df_vacio.to_csv(ARCHIVO_CSV, index=False)
 
