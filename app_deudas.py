@@ -92,9 +92,26 @@ with st.sidebar:
                 st.session_state['authenticated'] = False
                 st.session_state['user_info'] = None
                 st.rerun()
-            # Usuario y correo al pie, pequeño
+            # Usuario y correo al fondo de la barra lateral, pequeño
             user_info = st.session_state['user_info']
-            st.markdown(f"<div style='position:absolute;bottom:30px;left:10px;font-size:12px;color:#aaa;'>Usuario: {user_info.get('name','')}<br>Correo: {user_info.get('email','')}</div>", unsafe_allow_html=True)
+            st.markdown("""
+            <style>
+            .sidebar-user-footer {
+                position: fixed;
+                left: 0;
+                bottom: 0;
+                width: 17rem;
+                padding: 10px 10px 10px 20px;
+                font-size: 12px;
+                color: #aaa;
+                background: #222;
+                z-index: 9999;
+            }
+            </style>
+            <div class='sidebar-user-footer'>
+                Usuario: %s<br>Correo: %s
+            </div>
+            """ % (user_info.get('name',''), user_info.get('email','')), unsafe_allow_html=True)
 
 # --- APP PRINCIPAL SOLO SI AUTENTICADO ---
 if st.session_state['authenticated']:
@@ -115,11 +132,40 @@ if st.session_state['authenticated']:
                 file_name=os.path.basename(ARCHIVO_CSV),
                 mime="text/csv"
             )
-    # Opción para eliminar datos fuera de la barra lateral
-    st.markdown("<hr>", unsafe_allow_html=True)
-    eliminar = st.checkbox("Eliminar mis datos de usuario", key="eliminar_datos_main")
-    if eliminar and st.button("Eliminar mis datos ahora"):
-        # Eliminar archivo de usuario si existe
+
+    # Botón de borrado en la parte inferior derecha, pequeño
+    st.markdown("""
+    <style>
+    .delete-btn-container {
+        position: fixed;
+        right: 20px;
+        bottom: 10px;
+        z-index: 9999;
+        font-size: 11px;
+        color: #888;
+        text-align: right;
+    }
+    .delete-btn-container button {
+        font-size: 11px !important;
+        padding: 2px 8px !important;
+        margin-top: 2px;
+    }
+    </style>
+    <div class='delete-btn-container'>
+        <form action="#" method="post">
+            <input type="submit" value="Eliminar mis datos" onclick="window.eliminarDatosUsuario && window.eliminarDatosUsuario(); return false;" style="font-size:11px; padding:2px 8px;">
+        </form>
+    </div>
+    <script>
+    window.eliminarDatosUsuario = function() {
+        fetch(window.location.href, {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'eliminar_datos=1'}).then(()=>window.location.reload());
+    }
+    </script>
+    """, unsafe_allow_html=True)
+
+    # Manejo del borrado real en backend
+    import streamlit as st
+    if st.experimental_get_query_params().get('eliminar_datos') or st.session_state.get('eliminar_datos', False):
         import re
         def email_to_filename(email):
             return re.sub(r'[^a-zA-Z0-9]', '_', email)
@@ -127,6 +173,7 @@ if st.session_state['authenticated']:
         archivo = os.path.join("datos_usuarios", f"deudas_{email_to_filename(user_email)}.csv")
         if os.path.exists(archivo):
             os.remove(archivo)
+        st.session_state['eliminar_datos'] = False
         st.success("Tus datos han sido eliminados.")
 
     user_info = st.session_state['user_info']
@@ -236,9 +283,9 @@ if st.session_state['authenticated']:
     # Título y subtítulo
     st.title("💸 Gestor de Deudas Personales")
     st.markdown("Usa esta aplicación para controlar tus deudas y registrar tus pagos.")
-    # Pie de página con política de privacidad
+    # Pie de página con política de privacidad (lado izquierdo)
     st.markdown("""
-    <div style='position:fixed;bottom:0;width:100%;background:#222;padding:10px 0 10px 0;text-align:center;font-size:13px;color:#aaa;'>
+    <div style='position:fixed;bottom:0;left:0;width:350px;background:#222;padding:10px 0 10px 20px;font-size:13px;color:#aaa;text-align:left;'>
     Política de privacidad: Los datos se almacenan únicamente en tu cuenta y no se comparten ni suben a la nube. Puedes descargar o eliminar tus datos en cualquier momento.
     </div>
     """, unsafe_allow_html=True)
