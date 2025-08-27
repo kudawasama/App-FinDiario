@@ -70,7 +70,7 @@ if 'user_info' not in st.session_state:
 with st.sidebar:
     st.header("Autenticación")
     # Diagnóstico: muestra el REDIRECT_URI efectivo (no es secreto)
-    st.caption(f"REDIRECT_URI configurado: {REDIRECT_URI}")
+    st.caption(f"Página Oficial:  {REDIRECT_URI}") #REDIRECT_URI configurado:
     if not st.session_state['authenticated']:
         result = oauth2.authorize_button(
             name="Google",
@@ -88,24 +88,13 @@ with st.sidebar:
             st.success(f"¡Bienvenido, {user_info.get('name', 'Usuario')}!")
             st.rerun()
     else:
-        user_info = st.session_state['user_info']
-        st.write(f"Usuario: {user_info.get('name', '')}")
-        st.write(f"Correo: {user_info.get('email', '')}")
-        borrar = st.checkbox("Eliminar mis datos al cerrar sesión")
-        if st.button("Cerrar sesión"):
-            if borrar:
-                # Eliminar archivo de usuario si existe
-                user_info = st.session_state['user_info']
-                import re
-                def email_to_filename(email):
-                    return re.sub(r'[^a-zA-Z0-9]', '_', email)
-                user_email = user_info.get('email', 'default')
-                archivo = os.path.join("datos_usuarios", f"deudas_{email_to_filename(user_email)}.csv")
-                if os.path.exists(archivo):
-                    os.remove(archivo)
-            st.session_state['authenticated'] = False
-            st.session_state['user_info'] = None
-            st.rerun()
+            if st.button("Cerrar sesión"):
+                st.session_state['authenticated'] = False
+                st.session_state['user_info'] = None
+                st.rerun()
+            # Usuario y correo al pie, pequeño
+            user_info = st.session_state['user_info']
+            st.markdown(f"<div style='position:absolute;bottom:30px;left:10px;font-size:12px;color:#aaa;'>Usuario: {user_info.get('name','')}<br>Correo: {user_info.get('email','')}</div>", unsafe_allow_html=True)
 
 # --- APP PRINCIPAL SOLO SI AUTENTICADO ---
 if st.session_state['authenticated']:
@@ -126,6 +115,19 @@ if st.session_state['authenticated']:
                 file_name=os.path.basename(ARCHIVO_CSV),
                 mime="text/csv"
             )
+    # Opción para eliminar datos fuera de la barra lateral
+    st.markdown("<hr>", unsafe_allow_html=True)
+    eliminar = st.checkbox("Eliminar mis datos de usuario", key="eliminar_datos_main")
+    if eliminar and st.button("Eliminar mis datos ahora"):
+        # Eliminar archivo de usuario si existe
+        import re
+        def email_to_filename(email):
+            return re.sub(r'[^a-zA-Z0-9]', '_', email)
+        user_email = user_info.get('email', 'default')
+        archivo = os.path.join("datos_usuarios", f"deudas_{email_to_filename(user_email)}.csv")
+        if os.path.exists(archivo):
+            os.remove(archivo)
+        st.success("Tus datos han sido eliminados.")
 
     user_info = st.session_state['user_info']
     import re
@@ -234,7 +236,12 @@ if st.session_state['authenticated']:
     # Título y subtítulo
     st.title("💸 Gestor de Deudas Personales")
     st.markdown("Usa esta aplicación para controlar tus deudas y registrar tus pagos.")
-    st.info("Tus datos están vinculados a tu cuenta de Google y son privados. Solo tú puedes ver y modificar tu información de deudas.\n\nPolítica de privacidad: Los datos se almacenan únicamente en tu cuenta y no se comparten ni suben a la nube. Puedes descargar o eliminar tus datos en cualquier momento.")
+    # Pie de página con política de privacidad
+    st.markdown("""
+    <div style='position:fixed;bottom:0;width:100%;background:#222;padding:10px 0 10px 0;text-align:center;font-size:13px;color:#aaa;'>
+    Política de privacidad: Los datos se almacenan únicamente en tu cuenta y no se comparten ni suben a la nube. Puedes descargar o eliminar tus datos en cualquier momento.
+    </div>
+    """, unsafe_allow_html=True)
 
     # Menú lateral para la navegación
     st.sidebar.header("Menú de opciones")
