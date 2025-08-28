@@ -17,8 +17,34 @@ from dotenv import load_dotenv, find_dotenv
 _ENV_PATH = find_dotenv(usecwd=True)
 load_dotenv(_ENV_PATH)
 
+
+# --- Cargar credenciales desde client_secret_*.json si existe ---
+import glob
+import json
+CLIENT_ID = None
+CLIENT_SECRET = None
+REDIRECT_URI = None
+json_files = glob.glob("client_secret_*.json")
+if json_files:
+    with open(json_files[0], "r") as f:
+        data = json.load(f)
+        if "web" in data:
+            CLIENT_ID = data["web"].get("client_id")
+            CLIENT_SECRET = data["web"].get("client_secret")
+            # Usa el primer redirect_uri configurado
+            uris = data["web"].get("redirect_uris", [])
+            if uris:
+                REDIRECT_URI = uris[0]
+
 def _get_cred(name: str):
-    """Obtiene credencial desde st.secrets si existe; si no, de variables de entorno."""
+    """Obtiene credencial desde JSON, st.secrets o variables de entorno."""
+    # Prioridad: JSON > st.secrets > env
+    if name == "CLIENT_ID" and CLIENT_ID:
+        return CLIENT_ID
+    if name == "CLIENT_SECRET" and CLIENT_SECRET:
+        return CLIENT_SECRET
+    if name == "REDIRECT_URI" and REDIRECT_URI:
+        return REDIRECT_URI
     try:
         if name in st.secrets:
             return st.secrets[name]
@@ -249,7 +275,7 @@ if st.session_state['authenticated']:
 
     # Manejo del borrado real en backend
     import streamlit as st
-    if st.query_params().get('eliminar_datos') or st.session_state.get('eliminar_datos', False):
+    if st.query_params.get('eliminar_datos') or st.session_state.get('eliminar_datos', False):
         import re
         def email_to_filename(email):
             return re.sub(r'[^a-zA-Z0-9]', '_', email)
