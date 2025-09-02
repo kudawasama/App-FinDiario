@@ -5,6 +5,39 @@ import hashlib
 import json
 
 # Archivo donde se guardan los usuarios registrados
+# --- Gestión de contactos ---
+def contactos_file(email):
+    return os.path.join("datos_usuarios", f"contactos_{email_to_filename(email)}.json")
+
+def cargar_contactos(email):
+    archivo = contactos_file(email)
+    if os.path.exists(archivo):
+        with open(archivo, "r") as f:
+            return json.load(f)
+    return []
+
+def guardar_contactos(email, contactos):
+    archivo = contactos_file(email)
+    with open(archivo, "w") as f:
+        json.dump(contactos, f)
+
+def agregar_contacto(email, contacto_email):
+    contactos = cargar_contactos(email)
+    if contacto_email not in contactos:
+        contactos.append(contacto_email)
+        guardar_contactos(email, contactos)
+        return True, "Contacto agregado."
+    else:
+        return False, "El contacto ya existe."
+
+def eliminar_contacto(email, contacto_email):
+    contactos = cargar_contactos(email)
+    if contacto_email in contactos:
+        contactos.remove(contacto_email)
+        guardar_contactos(email, contactos)
+        return True, "Contacto eliminado."
+    else:
+        return False, "El contacto no existe."
 USUARIOS_FILE = "usuarios.json"
 
 # Función para hashear la contraseña
@@ -84,6 +117,40 @@ def email_to_filename(email):
 
 # Si el usuario está autenticado, define el archivo CSV de deudas
 if st.session_state['authenticated']:
+    user_email = st.session_state['user_email']
+    # --- Sección de gestión de contactos ---
+    st.sidebar.subheader("Mis contactos")
+    contactos = cargar_contactos(user_email)
+    st.sidebar.write("Contactos registrados:")
+    if contactos:
+        for c in contactos:
+            st.sidebar.write(f"- {c}")
+    else:
+        st.sidebar.info("No tienes contactos aún.")
+
+    st.sidebar.write("")
+    st.sidebar.write("Agregar contacto (email registrado):")
+    nuevo_contacto = st.sidebar.text_input("Email de contacto", key="nuevo_contacto")
+    if st.sidebar.button("Agregar contacto"):
+        if nuevo_contacto and nuevo_contacto != user_email:
+            exito, mensaje = agregar_contacto(user_email, nuevo_contacto)
+            if exito:
+                st.sidebar.success(mensaje)
+            else:
+                st.sidebar.error(mensaje)
+        else:
+            st.sidebar.error("Ingresa un email válido y diferente al tuyo.")
+
+    st.sidebar.write("")
+    st.sidebar.write("Eliminar contacto:")
+    contacto_a_eliminar = st.sidebar.selectbox("Selecciona contacto", options=contactos, key="eliminar_contacto")
+    if st.sidebar.button("Eliminar contacto"):
+        if contacto_a_eliminar:
+            exito, mensaje = eliminar_contacto(user_email, contacto_a_eliminar)
+            if exito:
+                st.sidebar.success(mensaje)
+            else:
+                st.sidebar.error(mensaje)
     user_email = st.session_state['user_email']
     ARCHIVO_CSV = os.path.join("datos_usuarios", f"deudas_{email_to_filename(user_email)}.csv")
 
