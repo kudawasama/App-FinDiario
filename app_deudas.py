@@ -180,13 +180,53 @@ if st.session_state['authenticated']:
     # --- Google Drive: Autenticación y funciones ---
     SCOPES = ['https://www.googleapis.com/auth/drive.file']
     creds = None
-    json_files = glob.glob("client_secret_*.json")
-    if json_files:
-        flow = InstalledAppFlow.from_client_secrets_file(json_files[0], SCOPES)
-        creds = flow.run_local_server(port=0)
-        drive_service = build('drive', 'v3', credentials=creds)
+    drive_service = None
+
+    if CLIENT_ID and CLIENT_SECRET and REDIRECT_URI:
+        # Solo crea el flujo si no hay token en session_state
+            from google_auth_oauthlib.flow import Flow
+            from google.oauth2.credentials import Credentials
+            SCOPES = ['https://www.googleapis.com/auth/drive.file']
+            if not st.session_state.get("google_drive_token"):
+                flow = Flow.from_client_config(
+                    {
+                        "web": {
+                            "client_id": CLIENT_ID,
+                            "client_secret": CLIENT_SECRET,
+                            "redirect_uris": [REDIRECT_URI],
+                            "auth_uri": "https://accounts.google.com/o/oauth2/v2/auth",
+                            "token_uri": "https://oauth2.googleapis.com/token"
+                        }
+                    },
+                    scopes=SCOPES,
+                    redirect_uri=REDIRECT_URI
+                )
+                auth_url, _ = flow.authorization_url(prompt='consent')
+                st.markdown(f"[Haz clic aquí para autorizar Google Drive]({auth_url})")
+                # Espera el código de autorización en la URL
+                code = st.experimental_get_query_params().get('code', [None])[0]
+                if code:
+                    flow.fetch_token(code=code)
+                    creds = flow.credentials
+                    # Guarda el token en session_state para futuras sesiones
+                    st.session_state["google_drive_token"] = {
+                        "token": creds.token,
+                        "refresh_token": creds.refresh_token,
+                        "token_uri": creds.token_uri,
+                        "client_id": creds.client_id,
+                        "client_secret": creds.client_secret,
+                        "scopes": creds.scopes
+                    }
+                    st.success("Google Drive autorizado correctamente. Recarga la página.")
+                    st.stop()
+                else:
+                    st.stop()
+            else:
+                creds = Credentials(**st.session_state["google_drive_token"])
+                drive_service = build('drive', 'v3', credentials=creds)
     else:
-        st.warning('No se encontró client_secret_*.json para Google Drive.')
+        st.warning('Faltan credenciales de Google OAuth2 en st.secrets o .env.')
+        st.stop()
 
     def subir_a_drive(local_path, nombre_drive):
         if not creds:
