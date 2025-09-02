@@ -1,4 +1,4 @@
-from google.oauth2 import service_account
+from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 import io
@@ -180,11 +180,13 @@ if st.session_state['authenticated']:
     # --- Google Drive: Autenticación y funciones ---
     SCOPES = ['https://www.googleapis.com/auth/drive.file']
     creds = None
-    if os.path.exists('credentials.json'):
-        creds = service_account.Credentials.from_service_account_file('credentials.json', scopes=SCOPES)
+    json_files = glob.glob("client_secret_*.json")
+    if json_files:
+        flow = InstalledAppFlow.from_client_secrets_file(json_files[0], SCOPES)
+        creds = flow.run_local_server(port=0)
         drive_service = build('drive', 'v3', credentials=creds)
     else:
-        st.warning('No se encontró credentials.json para Google Drive.')
+        st.warning('No se encontró client_secret_*.json para Google Drive.')
 
     def subir_a_drive(local_path, nombre_drive):
         if not creds:
