@@ -1,7 +1,9 @@
+
 import streamlit as st
 import os
 import hashlib
 import json
+st.set_page_config(page_title="Gestor de Deudas Personales", page_icon="💸", layout="wide", initial_sidebar_state="expanded")
 
 # Archivo donde se guardan los usuarios registrados
 # --- Gestión de contactos ---
@@ -123,9 +125,9 @@ if st.session_state['authenticated']:
         <b>Política de privacidad:</b> Tus datos se almacenan únicamente en tu cuenta y no se comparten ni suben a la nube. Puedes descargar o eliminar tus datos en cualquier momento.
     </div>
     """, unsafe_allow_html=True)
-    from pages.pagina_deudas import mostrar_pagina_deudas
-    from pages.pagina_contactos import mostrar_pagina_contactos
-    from pages.pagina_grupos import mostrar_pagina_grupos
+    from modulos.pagina_deudas import mostrar_pagina_deudas
+    from modulos.pagina_contactos import mostrar_pagina_contactos
+    from modulos.pagina_grupos import mostrar_pagina_grupos
 
     # Definir el menú principal y la variable 'opcion' correctamente
     st.sidebar.header("Menú de opciones")
