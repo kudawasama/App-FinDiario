@@ -1,5 +1,5 @@
 import streamlit as st
-from app_deudas import cargar_datos, anadir_deuda, eliminar_deuda, registrar_pago, safe_int
+from utils_deudas import cargar_datos, anadir_deuda, eliminar_deuda, registrar_pago, safe_int
 
 def mostrar_pagina_deudas(user_email):
     st.header("Gestor de Deudas Personales")

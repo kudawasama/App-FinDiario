@@ -1,7 +1,8 @@
 import streamlit as st
 import os
 import json
-from app_deudas import cargar_contactos, email_to_filename
+from app_deudas import cargar_contactos
+from utils_deudas import email_to_filename
 
 def mostrar_pagina_grupos(user_email):
     st.header("Gestión de Grupos/Comunidades")

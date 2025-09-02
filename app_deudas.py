@@ -1,5 +1,4 @@
 import streamlit as st
-import pandas as pd
 import os
 import hashlib
 import json
@@ -111,16 +110,12 @@ with st.sidebar:
             st.rerun()
 
 # Función para convertir email en nombre de archivo seguro
-def email_to_filename(email):
-    import re
-    return re.sub(r'[^a-zA-Z0-9]', '_', email)
+# Usar la función de utils_deudas.py
+from utils_deudas import email_to_filename
 
 # Si el usuario está autenticado, define el archivo CSV de deudas
 if st.session_state['authenticated']:
     user_email = st.session_state['user_email']
-    # --- Sección de gestión de contactos ---
-    user_email = st.session_state['user_email']
-    ARCHIVO_CSV = os.path.join("datos_usuarios", f"deudas_{email_to_filename(user_email)}.csv")
 
     # --- Footer de privacidad simple ---
     st.markdown("""
