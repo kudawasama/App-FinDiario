@@ -11,13 +11,19 @@ def contactos_file(email):
 
 def cargar_contactos(email):
     archivo = contactos_file(email)
-    if os.path.exists(archivo):
-        with open(archivo, "r") as f:
-            return json.load(f)
-    return []
+    if not os.path.exists(archivo):
+        os.makedirs(os.path.dirname(archivo), exist_ok=True)
+        with open(archivo, "w") as f:
+            json.dump([], f)
+    with open(archivo, "r") as f:
+        return json.load(f)
 
 def guardar_contactos(email, contactos):
     archivo = contactos_file(email)
+    if not os.path.exists(archivo):
+        os.makedirs(os.path.dirname(archivo), exist_ok=True)
+        with open(archivo, "w") as f:
+            json.dump([], f)
     with open(archivo, "w") as f:
         json.dump(contactos, f)
 
@@ -46,13 +52,17 @@ def hash_password(password):
 
 # Cargar usuarios desde el archivo JSON
 def cargar_usuarios():
-    if os.path.exists(USUARIOS_FILE):
-        with open(USUARIOS_FILE, "r") as f:
-            return json.load(f)
-    return {}
+    if not os.path.exists(USUARIOS_FILE):
+        with open(USUARIOS_FILE, "w") as f:
+            json.dump({}, f)
+    with open(USUARIOS_FILE, "r") as f:
+        return json.load(f)
 
 # Guardar usuarios en el archivo JSON
 def guardar_usuarios(usuarios):
+    if not os.path.exists(USUARIOS_FILE):
+        with open(USUARIOS_FILE, "w") as f:
+            json.dump({}, f)
     with open(USUARIOS_FILE, "w") as f:
         json.dump(usuarios, f)
 

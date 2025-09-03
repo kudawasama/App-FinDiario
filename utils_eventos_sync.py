@@ -6,14 +6,19 @@ def evento_file(evento_id):
 
 def cargar_evento(evento_id):
     archivo = evento_file(evento_id)
-    if os.path.exists(archivo):
-        with open(archivo, "r") as f:
-            return json.load(f)
-    return None
+    if not os.path.exists(archivo):
+        os.makedirs(os.path.dirname(archivo), exist_ok=True)
+        with open(archivo, "w") as f:
+            json.dump({"id": evento_id, "grupo_id": "", "nombre": "", "admin": "", "participantes": [], "montos": {}, "pagos": {}}, f)
+    with open(archivo, "r") as f:
+        return json.load(f)
 
 def guardar_evento(evento_id, evento):
     archivo = evento_file(evento_id)
-    os.makedirs(os.path.dirname(archivo), exist_ok=True)
+    if not os.path.exists(archivo):
+        os.makedirs(os.path.dirname(archivo), exist_ok=True)
+        with open(archivo, "w") as f:
+            json.dump({"id": evento_id, "grupo_id": "", "nombre": "", "admin": "", "participantes": [], "montos": {}, "pagos": {}}, f)
     with open(archivo, "w") as f:
         json.dump(evento, f)
 

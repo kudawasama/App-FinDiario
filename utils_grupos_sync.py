@@ -6,14 +6,19 @@ def grupo_file(grupo_id):
 
 def cargar_grupo(grupo_id):
     archivo = grupo_file(grupo_id)
-    if os.path.exists(archivo):
-        with open(archivo, "r") as f:
-            return json.load(f)
-    return None
+    if not os.path.exists(archivo):
+        os.makedirs(os.path.dirname(archivo), exist_ok=True)
+        with open(archivo, "w") as f:
+            json.dump({"id": grupo_id, "nombre": "", "miembros": []}, f)
+    with open(archivo, "r") as f:
+        return json.load(f)
 
 def guardar_grupo(grupo_id, grupo):
     archivo = grupo_file(grupo_id)
-    os.makedirs(os.path.dirname(archivo), exist_ok=True)
+    if not os.path.exists(archivo):
+        os.makedirs(os.path.dirname(archivo), exist_ok=True)
+        with open(archivo, "w") as f:
+            json.dump({"id": grupo_id, "nombre": "", "miembros": []}, f)
     with open(archivo, "w") as f:
         json.dump(grupo, f)
 
