@@ -30,10 +30,13 @@ def mostrar_pagina_deudas(user_email):
 	if st.button("Eliminar deuda") and len(df)>0:
 		exito, mensaje = eliminar_deuda(user_email, indice_eliminar)
 		if exito:
-			st.success(mensaje)
+			st.session_state["deuda_eliminada"] = mensaje
 			st.experimental_rerun()
 		else:
 			st.error(mensaje)
+	if st.session_state.get("deuda_eliminada"):
+		st.success(st.session_state["deuda_eliminada"])
+		st.session_state["deuda_eliminada"] = False
     
 	st.subheader("Registrar pago")
 	indice_pago = st.number_input("Índice de la deuda a pagar", min_value=0, max_value=len(df)-1 if len(df)>0 else 0, step=1, key="pago")
