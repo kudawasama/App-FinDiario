@@ -141,7 +141,7 @@ if st.session_state['authenticated']:
     elif opcion == "Grupos":
         mostrar_pagina_grupos(user_email)
     elif opcion == "Eventos":
-        from pages.pagina_eventos import mostrar_pagina_eventos
+        from pages_.pagina_eventos import mostrar_pagina_eventos
         mostrar_pagina_eventos(user_email)
 else:
     st.info("Por favor, inicia sesión con tu cuenta para acceder a la app de deudas.")
