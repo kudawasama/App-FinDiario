@@ -66,12 +66,9 @@ def mostrar_pagina_eventos(user_email):
                     guardar_evento(evento['id'], evento)
                     st.success(f"Pago de {p} confirmado.")
                     st.experimental_rerun()
-        if user_email == evento['admin'] and st.button("Guardar montos editados"):
-            for p, nuevo_monto in montos_editados.items():
-                evento['montos'][p] = nuevo_monto
+        if st.button("Guardar cambios del evento"):
             guardar_evento(evento['id'], evento)
-            st.success("Montos actualizados correctamente.")
-            st.experimental_rerun()
+            st.success("Cambios guardados correctamente.")
         st.subheader("Chat del evento")
         if 'chat' not in evento:
             evento['chat'] = []

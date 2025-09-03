@@ -56,20 +56,19 @@ def mostrar_pagina_grupos(user_email):
 		if st.button("Agregar miembro") and nuevo_miembro:
 			if nuevo_miembro not in grupo["miembros"]:
 				grupo["miembros"].append(nuevo_miembro)
-				guardar_grupo(grupo['id'], grupo)
-				st.success("Miembro agregado correctamente.")
-				st.experimental_rerun()
+				st.success("Miembro agregado. Recuerda presionar 'Guardar' para confirmar los cambios.")
 			else:
 				st.warning("Ese miembro ya está en el grupo.")
 		st.subheader("Eliminar miembro")
 		miembro_eliminar = st.selectbox("Selecciona el miembro a eliminar", grupo["miembros"]) if "miembros" in grupo else None
 		if st.button("Eliminar miembro") and miembro_eliminar and miembro_eliminar != user_email:
 			grupo["miembros"].remove(miembro_eliminar)
-			guardar_grupo(grupo['id'], grupo)
-			st.success("Miembro eliminado correctamente.")
-			st.experimental_rerun()
+			st.success("Miembro eliminado. Recuerda presionar 'Guardar' para confirmar los cambios.")
 		elif st.button("Eliminar miembro") and miembro_eliminar == user_email:
 			st.warning("No puedes eliminarte a ti mismo del grupo.")
+		if st.button("Guardar"):
+			guardar_grupo(grupo['id'], grupo)
+			st.success("Cambios guardados correctamente.")
 	else:
 		st.info("No tienes grupos creados.")
 

@@ -40,9 +40,7 @@ def mostrar_pagina_contactos(user_email):
 	if st.button("Agregar contacto") and nuevo_contacto:
 		if nuevo_contacto not in contactos:
 			contactos.append(nuevo_contacto)
-			guardar_contactos(user_email, contactos)
-			st.success("Contacto agregado correctamente.")
-			st.experimental_rerun()
+			st.success("Contacto agregado. Recuerda presionar 'Guardar' para confirmar los cambios.")
 		else:
 			st.warning("Ese contacto ya está en tu lista.")
 
@@ -50,6 +48,8 @@ def mostrar_pagina_contactos(user_email):
 	contacto_eliminar = st.selectbox("Selecciona el contacto a eliminar", contactos) if contactos else None
 	if st.button("Eliminar contacto") and contacto_eliminar:
 		contactos.remove(contacto_eliminar)
+		st.success("Contacto eliminado. Recuerda presionar 'Guardar' para confirmar los cambios.")
+
+	if st.button("Guardar"):
 		guardar_contactos(user_email, contactos)
-		st.success("Contacto eliminado correctamente.")
-		st.experimental_rerun()
+		st.success("Cambios guardados correctamente.")

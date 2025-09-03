@@ -8,6 +8,10 @@ def mostrar_pagina_deudas(user_email):
 	df = cargar_datos(user_email)
 	st.subheader("Tus deudas actuales")
 	st.dataframe(df)
+	if st.button("Guardar cambios de deudas"):
+		from utils_deudas import guardar_datos
+		guardar_datos(user_email, df)
+		st.success("Cambios guardados correctamente.")
     
 	st.subheader("Añadir nueva deuda")
 	acreedor = st.text_input("Acreedor")
@@ -37,7 +41,10 @@ def mostrar_pagina_deudas(user_email):
 	if st.button("Registrar pago") and len(df)>0:
 		exito, mensaje = registrar_pago(user_email, indice_pago, monto_pago)
 		if exito:
-			st.success(mensaje)
+			st.session_state["pago_registrado"] = mensaje
 			st.experimental_rerun()
 		else:
 			st.error(mensaje)
+	if st.session_state.get("pago_registrado"):
+		st.success(st.session_state["pago_registrado"])
+		st.session_state["pago_registrado"] = False
