@@ -1,13 +1,8 @@
-usuarios.json
-datos_usuarios/
-# Proteger datos de usuario
-deudas.csv
-
+# deudas.csv
 # Proteger credenciales y variables de entorno
 .env
 *.env
 client_secret_*.json
-
 # Otros archivos sensibles
 *.key
 *.pem

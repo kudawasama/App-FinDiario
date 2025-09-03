@@ -1,4 +1,3 @@
-
 import streamlit as st
 import os
 import hashlib
@@ -131,19 +130,19 @@ if st.session_state['authenticated']:
 
     # Definir el menú principal y la variable 'opcion' correctamente
     st.sidebar.header("Menú de opciones")
-    opcion = st.sidebar.radio(
-        "Selecciona una opción:",
-        ["Añadir Deuda", "Listar y Pagar", "Resumen de Deudas", "Contactos", "Grupos"]
-    )
-    # Guardar la opción seleccionada en session_state para las páginas
+    opciones = ["Deudas", "Contactos", "Grupos", "Eventos"]
+    opcion = st.sidebar.radio("Selecciona una opción:", opciones)
     st.session_state['opcion_deudas'] = opcion
 
-    if opcion in ["Añadir Deuda", "Listar y Pagar", "Resumen de Deudas"]:
+    if opcion == "Deudas":
         mostrar_pagina_deudas(user_email)
     elif opcion == "Contactos":
         mostrar_pagina_contactos(user_email)
     elif opcion == "Grupos":
         mostrar_pagina_grupos(user_email)
+    elif opcion == "Eventos":
+        from pages.pagina_eventos import mostrar_pagina_eventos
+        mostrar_pagina_eventos(user_email)
 else:
     st.info("Por favor, inicia sesión con tu cuenta para acceder a la app de deudas.")
 
