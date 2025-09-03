@@ -1,0 +1,1 @@
+{"id": "evento_ejemplo", "grupo_id": "grupo_ejemplo", "nombre": "Evento Ejemplo", "admin": "ejemplo@email.com", "participantes": ["ejemplo@email.com"], "montos": {"ejemplo@email.com": 100}, "pagos": {}}
