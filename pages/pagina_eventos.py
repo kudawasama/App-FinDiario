@@ -1,18 +1,18 @@
 import streamlit as st
 import os
-import json
-from utils_grupos_eventos import cargar_grupos, guardar_grupos, cargar_eventos, guardar_eventos
+from utils_grupos_sync import buscar_grupos_por_usuario
+from utils_eventos_sync import evento_file, cargar_evento, guardar_evento, buscar_eventos_por_grupo
 
 def mostrar_pagina_eventos(user_email):
     st.header("Gestión de Eventos de Grupo")
-    grupos = cargar_grupos(user_email)
+    grupos = buscar_grupos_por_usuario(user_email)
     if not grupos:
         st.info("Primero debes crear o unirte a un grupo.")
         return
     grupo_nombres = [g['nombre'] for g in grupos]
     grupo_idx = st.selectbox("Selecciona un grupo", range(len(grupo_nombres)), format_func=lambda i: grupo_nombres[i])
     grupo = grupos[grupo_idx]
-    eventos = cargar_eventos(grupo['id'])
+    eventos = buscar_eventos_por_grupo(grupo['id'])
     st.subheader(f"Eventos en el grupo: {grupo['nombre']}")
     if eventos:
         evento_nombres = [e['nombre'] for e in eventos]
@@ -21,7 +21,6 @@ def mostrar_pagina_eventos(user_email):
         st.write(f"Administrador: {evento['admin']}")
         st.write("Participantes y montos:")
         montos_editados = {}
-        # Historial de pagos
         st.subheader("Historial de pagos")
         if 'historial' not in evento:
             evento['historial'] = []
@@ -32,7 +31,6 @@ def mostrar_pagina_eventos(user_email):
             pago = evento['pagos'].get(p, {})
             estado = "Pago pendiente" if not pago.get('confirmado') else "Pago confirmado"
             st.write(f"- {p}: ${monto} | Estado: {estado}")
-            # Edición de montos por el administrador
             if user_email == evento['admin']:
                 nuevo_monto = st.number_input(f"Editar monto de {p}", min_value=0, value=monto, key=f"edit_monto_{p}")
                 montos_editados[p] = nuevo_monto
@@ -49,7 +47,7 @@ def mostrar_pagina_eventos(user_email):
                         "monto": monto_pago,
                         "confirmado": False
                     })
-                    guardar_eventos(grupo['id'], eventos)
+                    guardar_evento(evento['id'], evento)
                     if comprobante:
                         carpeta = os.path.join("datos_usuarios", f"comprobantes_{grupo['id']}")
                         os.makedirs(carpeta, exist_ok=True)
@@ -62,21 +60,18 @@ def mostrar_pagina_eventos(user_email):
                 st.write(f"Comprobante: {pago['comprobante']}")
                 if st.button(f"Confirmar pago de {p}", key=f"confirmar_{p}"):
                     evento['pagos'][p]['confirmado'] = True
-                    # Actualizar historial
                     for h in evento['historial']:
                         if h['usuario'] == p and h['monto'] == pago['monto'] and not h.get('confirmado'):
                             h['confirmado'] = True
-                    guardar_eventos(grupo['id'], eventos)
+                    guardar_evento(evento['id'], evento)
                     st.success(f"Pago de {p} confirmado.")
                     st.experimental_rerun()
-        # Botón para guardar los montos editados
         if user_email == evento['admin'] and st.button("Guardar montos editados"):
             for p, nuevo_monto in montos_editados.items():
                 evento['montos'][p] = nuevo_monto
-            guardar_eventos(grupo['id'], eventos)
+            guardar_evento(evento['id'], evento)
             st.success("Montos actualizados correctamente.")
             st.experimental_rerun()
-        # Mini chat
         st.subheader("Chat del evento")
         if 'chat' not in evento:
             evento['chat'] = []
@@ -90,7 +85,7 @@ def mostrar_pagina_eventos(user_email):
                 "usuario": user_email,
                 "mensaje": nuevo_msg
             })
-            guardar_eventos(grupo['id'], eventos)
+            guardar_evento(evento['id'], evento)
             st.experimental_rerun()
     else:
         st.info("No hay eventos en este grupo.")
@@ -100,16 +95,18 @@ def mostrar_pagina_eventos(user_email):
     participantes = st.multiselect("Selecciona participantes", grupo['miembros'], default=[user_email])
     monto_total = st.number_input("Monto total del evento", min_value=0, step=1)
     if st.button("Crear evento") and nombre_evento and participantes and monto_total > 0:
+        import uuid
+        evento_id = str(uuid.uuid4())
         monto_por_persona = monto_total // len(participantes)
         evento = {
-            "id": f"{nombre_evento.replace(' ','_').lower()}_{len(eventos)}",
+            "id": evento_id,
+            "grupo_id": grupo['id'],
             "nombre": nombre_evento,
             "admin": admin_evento,
             "participantes": participantes,
             "montos": {p: monto_por_persona for p in participantes},
             "pagos": {}
         }
-        eventos.append(evento)
-        guardar_eventos(grupo['id'], eventos)
+        guardar_evento(evento_id, evento)
         st.success("Evento creado correctamente.")
         st.experimental_rerun()

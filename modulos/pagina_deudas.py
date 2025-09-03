@@ -15,8 +15,11 @@ def mostrar_pagina_deudas(user_email):
 	fecha_vencimiento = st.date_input("Fecha de vencimiento")
 	if st.button("Añadir deuda"):
 		anadir_deuda(user_email, acreedor, monto_total, fecha_vencimiento)
-		st.success("Deuda añadida correctamente.")
+		st.session_state["deuda_añadida"] = True
 		st.experimental_rerun()
+	if st.session_state.get("deuda_añadida"):
+		st.success("Deuda añadida correctamente.")
+		st.session_state["deuda_añadida"] = False
     
 	st.subheader("Eliminar deuda")
 	indice_eliminar = st.number_input("Índice de la deuda a eliminar", min_value=0, max_value=len(df)-1 if len(df)>0 else 0, step=1)
