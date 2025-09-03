@@ -20,7 +20,10 @@ def mostrar_pagina_deudas(user_email):
 	if st.button("Añadir deuda"):
 		anadir_deuda(user_email, acreedor, monto_total, fecha_vencimiento)
 		st.session_state["deuda_añadida"] = True
-		st.experimental_rerun()
+		try:
+			st.experimental_rerun()
+		except AttributeError:
+			st.warning("No se pudo recargar la página automáticamente. Recarga manualmente si no ves los cambios.")
 	if st.session_state.get("deuda_añadida"):
 		st.success("Deuda añadida correctamente.")
 		st.session_state["deuda_añadida"] = False
@@ -31,7 +34,10 @@ def mostrar_pagina_deudas(user_email):
 		exito, mensaje = eliminar_deuda(user_email, indice_eliminar)
 		if exito:
 			st.session_state["deuda_eliminada"] = mensaje
-			st.experimental_rerun()
+			try:
+				st.experimental_rerun()
+			except AttributeError:
+				st.warning("No se pudo recargar la página automáticamente. Recarga manualmente si no ves los cambios.")
 		else:
 			st.error(mensaje)
 	if st.session_state.get("deuda_eliminada"):
@@ -45,7 +51,10 @@ def mostrar_pagina_deudas(user_email):
 		exito, mensaje = registrar_pago(user_email, indice_pago, monto_pago)
 		if exito:
 			st.session_state["pago_registrado"] = mensaje
-			st.experimental_rerun()
+			try:
+				st.experimental_rerun()
+			except AttributeError:
+				st.warning("No se pudo recargar la página automáticamente. Recarga manualmente si no ves los cambios.")
 		else:
 			st.error(mensaje)
 	if st.session_state.get("pago_registrado"):
