@@ -88,37 +88,37 @@ if 'authenticated' not in st.session_state:
 if 'user_email' not in st.session_state:
     st.session_state['user_email'] = None
 
-# Sidebar para login/registro
-with st.sidebar:
-    st.header("Autenticación")
-    if not st.session_state['authenticated']:
-        tab1, tab2 = st.tabs(["Iniciar sesión", "Registrarse"])
-        with tab1:
-            email = st.text_input("Correo electrónico")
-            password = st.text_input("Contraseña", type="password")
-            if st.button("Iniciar sesión"):
-                if autenticar_usuario(email, password):
-                    st.session_state['authenticated'] = True
-                    st.session_state['user_email'] = email
-                    st.success("¡Bienvenido!")
-                    st.rerun()
-                else:
-                    st.error("Correo o contraseña incorrectos.")
-        with tab2:
-            email_reg = st.text_input("Correo electrónico para registro")
-            password_reg = st.text_input("Contraseña para registro", type="password")
-            if st.button("Registrarse"):
-                exito, mensaje = registrar_usuario(email_reg, password_reg)
-                if exito:
-                    st.success(mensaje)
-                else:
-                    st.error(mensaje)
-    else:
-        st.write(f"Usuario: {st.session_state['user_email']}")
-        if st.button("Cerrar sesión"):
-            st.session_state['authenticated'] = False
-            st.session_state['user_email'] = None
-            st.rerun()
+
+# Sidebar solo para autenticación
+if not st.session_state['authenticated']:
+    st.sidebar.header("Autenticación")
+    tab1, tab2 = st.sidebar.tabs(["Iniciar sesión", "Registrarse"])
+    with tab1:
+        email = st.sidebar.text_input("Correo electrónico")
+        password = st.sidebar.text_input("Contraseña", type="password")
+        if st.sidebar.button("Iniciar sesión"):
+            if autenticar_usuario(email, password):
+                st.session_state['authenticated'] = True
+                st.session_state['user_email'] = email
+                st.success("¡Bienvenido!")
+                st.rerun()
+            else:
+                st.error("Correo o contraseña incorrectos.")
+    with tab2:
+        email_reg = st.sidebar.text_input("Correo electrónico para registro")
+        password_reg = st.sidebar.text_input("Contraseña para registro", type="password")
+        if st.sidebar.button("Registrarse"):
+            exito, mensaje = registrar_usuario(email_reg, password_reg)
+            if exito:
+                st.success(mensaje)
+            else:
+                st.error(mensaje)
+else:
+    st.sidebar.write(f"Usuario: {st.session_state['user_email']}")
+    if st.sidebar.button("Cerrar sesión"):
+        st.session_state['authenticated'] = False
+        st.session_state['user_email'] = None
+        st.rerun()
 
 # Función para convertir email en nombre de archivo seguro
 # Usar la función de utils_deudas.py
@@ -138,10 +138,10 @@ if st.session_state['authenticated']:
     from modulos.pagina_contactos import mostrar_pagina_contactos
     from modulos.pagina_grupos import mostrar_pagina_grupos
 
-    # Definir el menú principal y la variable 'opcion' correctamente
+    # Menú personalizado solo visible tras autenticación
     st.sidebar.header("Menú de opciones")
     opciones = ["Deudas", "Contactos", "Grupos", "Eventos"]
-    opcion = st.sidebar.radio("Selecciona una opción:", opciones)
+    opcion = st.sidebar.radio("Selecciona una opción:", opciones, key="menu_opciones")
     st.session_state['opcion_deudas'] = opcion
 
     if opcion == "Deudas":
